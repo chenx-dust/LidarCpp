@@ -1,10 +1,11 @@
 #include "livox_lidar_api.h"
 #include "livox_lidar_def.h"
 #include "message/proto/lidar.pb.h"
-#include "spdlog/spdlog.h"
+// #include "spdlog/spdlog.h"
 #include <cstddef>
 #include <csignal>
 #include <ctype.h>
+#include <iostream>
 #include <zmq.hpp>
 
 uint32_t public_handle = 0;
@@ -28,7 +29,8 @@ rdr::LiDARRawPoints convertPointCloud(const LivoxLidarCartesianHighRawPoint *poi
 
 void infoCallback(const uint32_t handle, const LivoxLidarInfo *info, void *client_data)
 {
-    spdlog::info("收到设备信息 dev_type: {}, sn: {}, lidar_ip: {}", info->dev_type, info->sn, info->lidar_ip);
+    // spdlog::info("收到设备信息 dev_type: {}, sn: {}, lidar_ip: {}", info->dev_type, info->sn, info->lidar_ip);
+    std::cout << "收到设备信息 dev_type: " << info->dev_type << ", sn: " << info->sn << ", lidar_ip: " << info->lidar_ip << std::endl;
     public_handle = handle;
 
     SetLivoxLidarPclDataType(handle, kLivoxLidarCartesianCoordinateHighData, nullptr, nullptr);
@@ -38,17 +40,20 @@ void pointCloudCallback(const uint32_t handle, const uint8_t dev_type, LivoxLida
 {
     if (data == nullptr)
         return;
-    spdlog::debug("收到点云数据 dot_num: {}, length: {}, data_type: {}", data->dot_num, data->length, data->data_type);
+    // spdlog::debug("收到点云数据 dot_num: {}, length: {}, data_type: {}", data->dot_num, data->length,
+    // data->data_type);
+    std::cout << "收到点云数据 dot_num: " << data->dot_num << ", length: " << data->length << ", data_type: " << data->data_type << std::endl;
     if (data->data_type != kLivoxLidarCartesianCoordinateHighData)
     {
-        spdlog::warn("不支持的点云数据类型 {}", data->data_type);
+        // spdlog::warn("不支持的点云数据类型 {}", data->data_type);
         return;
     }
     auto points = convertPointCloud((LivoxLidarCartesianHighRawPoint *)data->data, data->dot_num);
     std::string buffer;
     points.SerializeToString(&buffer);
     sock.send(zmq::buffer(buffer));
-    spdlog::debug("点云数据已发送");
+    // spdlog::debug("点云数据已发送");
+    std::cout << "点云数据已发送" << std::endl;
 }
 
 void Stop(int signal)
@@ -60,17 +65,20 @@ int main()
 {
     if (!LivoxLidarSdkInit("config.json"))
     {
-        spdlog::error("Livox SDK 初始化失败");
+        // spdlog::error("Livox SDK 初始化失败");
+        std::cout << "Livox SDK 初始化失败" << std::endl;
         LivoxLidarSdkUninit();
         throw std::runtime_error("Livox SDK 初始化失败");
     }
     LivoxLidarSdkStart();
     SetLivoxLidarInfoChangeCallback(infoCallback, nullptr);
     SetLivoxLidarPointCloudCallBack(pointCloudCallback, nullptr);
-    spdlog::info("Livox SDK 初始化成功");
+    // spdlog::info("Livox SDK 初始化成功");
+    std::cout << "Livox SDK 初始化成功" << std::endl;
 
     sock.bind("tcp://0.0.0.0:8200");
-    spdlog::info("ZeroMQ 连接至 tcp://0.0.0.0:8200");
+    // spdlog::info("ZeroMQ 连接至 tcp://0.0.0.0:8200");
+    std::cout << "ZeroMQ 连接至 tcp://0.0.0.0:8200" << std::endl;
 
     std::signal(SIGINT, Stop);
 
@@ -78,6 +86,6 @@ int main()
     quit_condition.wait(lock);
 
     LivoxLidarSdkUninit();
-    printf("退出完毕");
+    std::cout << "已停止" << std::endl;
     return 0;
 }
