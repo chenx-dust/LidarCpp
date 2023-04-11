@@ -1,0 +1,6 @@
+[submodule "message/proto"]
+	path = message/proto
+	url = https://github.com/shirok1/rdr-proto.git
+[submodule "thirdparty/Livox-SDK2"]
+	path = thirdparty/Livox-SDK2
+	url = https://github.com/Livox-SDK/Livox-SDK2.git
